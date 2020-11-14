@@ -5,29 +5,16 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 
 public class Main {
-    public static void main(String[] args) {
-//        boolean[][] image = {
-//                { true,  false, false, false, false, false },
-//                { true,  false, false, false, false, false },
-//                { false, false, true,  true,  false, false },
-//                { false, false, true,  false, false, false },
-//                { false, false, false, false, false, true  },
-//                { false, false, false, false, false, true  },
-//        };
-//
-//        boolean[][] pattern = {
-//                { false, false, false, false },
-//                { false, true,  true,  false },
-//                { false, true,  false, false },
-//                { false, false, false, false },
-//        };
+    public static final byte NO_CLOUD = 0;
+    public static final byte CLOUD = 1;
+    public static final byte UNSURE = 2;
 
-        boolean[][] image = pngToBoolArray("clouds.png");
-        boolean[][] pattern = pngToBoolArray("pattern.png");
+    public static void main(String[] args) {
+        byte[][] image = pngToByteArray("clouds.png");
+        byte[][] pattern = pngToByteArray("pattern.png");
 
         ArrayList<PatternMatch> matches = new ArrayList();
 
@@ -37,7 +24,7 @@ public class Main {
                 for (int px = 0; px < pattern[0].length; px++) {
                     for (int py = 0; py < pattern.length; py++) {
                         if (iy+py < image.length && ix+px < image[0].length) {
-                            if (image[iy + py][ix + px] == pattern[py][px]) {
+                            if (image[iy + py][ix + px] == pattern[py][px] && pattern[py][px] != UNSURE) {
                                 match_count_local++;
                             }
                         }
@@ -46,9 +33,9 @@ public class Main {
                         System.out.println();
                     }
                 }
-//                if (match_count_local > pattern.length / 2) {
+                if (match_count_local > pattern.length / 2) {
                     matches.add(new PatternMatch(match_count_local, ix, iy));
-//                }
+                }
             }
         }
 
@@ -62,8 +49,19 @@ public class Main {
                 for (int px = 0; px < pattern[0].length; px++) {
                     for (int py = 0; py < pattern.length; py++) {
                         if (iy+py < image.length && ix+px < image[0].length) {
-                            System.out.printf("%c", image[iy + py][ix + px] ? '#' : '.');
-//                            System.out.printf("%c", pattern[py][px] ? '#' : '.');
+//                            System.out.printf("%c", image[iy + py][ix + px] == CLOUD ? '#' : '.');
+//                            switch (pattern[py][px]) {
+                            switch (image[iy + py][ix + px]) {
+                                case CLOUD:
+                                    System.out.printf("#");
+                                    break;
+                                case NO_CLOUD:
+                                    System.out.printf(".");
+                                    break;
+                                case UNSURE:
+                                    System.out.printf("X");
+                                    break;
+                            }
                         }
                     }
                     System.out.println();
@@ -93,7 +91,7 @@ public class Main {
         }
     }
 
-    public static boolean[][] pngToBoolArray(String path) {
+    public static byte[][] pngToByteArray(String path) {
         BufferedImage image;
         try {
             image = ImageIO.read(new File(path));
@@ -101,11 +99,17 @@ public class Main {
             e.printStackTrace();
             return null;
         }
-        boolean[][] array = new boolean[image.getHeight()][image.getWidth()];
+        byte[][] array = new byte[image.getHeight()][image.getWidth()];
         for (int x = 0; x < image.getWidth(); x++) {
             for (int y = 0; y < image.getHeight(); y++) {
                 Color color = new Color(image.getRGB(x, y));
-                array[y][x] = color.getGreen() > 127;
+                if (color.getGreen() > 127) {
+                    array[y][x] = CLOUD;
+                } else if (color.getRed() > 127) {
+                    array[y][x] = UNSURE;
+                } else {
+                    array[y][x] = NO_CLOUD;
+                }
             }
         }
         return array;
