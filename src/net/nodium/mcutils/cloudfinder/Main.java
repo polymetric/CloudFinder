@@ -12,6 +12,8 @@ public class Main {
     public static final byte CLOUD = 1;
     public static final byte UNSURE = 2;
 
+    public static int totalConfident = 0;
+
     public static void main(String[] args) {
         byte[][] image = pngToByteArray("clouds.png");
         byte[][] pattern = pngToByteArray("pattern.png");
@@ -80,8 +82,12 @@ public class Main {
             this.y = y;
         }
 
+        public double confidence() {
+            return 100 * ((double) matches / (double) totalConfident);
+        }
+
         public String toString() {
-            return String.format("%12d %12d %12d", matches, x, y);
+            return String.format("%12.2f%% %12d %12d", confidence(), x, y);
         }
     }
 
@@ -92,6 +98,7 @@ public class Main {
     }
 
     public static byte[][] pngToByteArray(String path) {
+        totalConfident = 0;
         BufferedImage image;
         try {
             image = ImageIO.read(new File(path));
@@ -105,10 +112,12 @@ public class Main {
                 Color color = new Color(image.getRGB(x, y));
                 if (color.getGreen() > 127) {
                     array[y][x] = CLOUD;
+                    totalConfident++;
                 } else if (color.getRed() > 127) {
                     array[y][x] = UNSURE;
                 } else {
                     array[y][x] = NO_CLOUD;
+                    totalConfident++;
                 }
             }
         }
